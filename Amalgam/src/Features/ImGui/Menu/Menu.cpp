@@ -13,12 +13,10 @@
 #include "../../Misc/Misc.h"
 #include "../../Output/Output.h"
 
-
 #pragma comment(lib, "wininet.lib")
 #include <fstream>
 #include <sstream>
 
-// The main menu
 void CMenu::DrawMenu()
 {
 	using namespace ImGui;
@@ -41,7 +39,6 @@ void CMenu::DrawMenu()
 
 		pDrawList->AddRectFilled(vDrawPos, { vDrawPos.x + vWindowSize.x, vDrawPos.y + vWindowSize.y }, F::Render.Background0, H::Draw.Scale(6));
 
-
 		if (!Vars::Menu::CheatTitle.Value.empty())
 		{
 			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
@@ -53,20 +50,21 @@ void CMenu::DrawMenu()
 			PopStyleColor();
 		}
 
+		// Horizontal Tabs
 		static int iTab = 0, iAimbotTab = 0, iVisualsTab = 0, iMiscTab = 0, iLogsTab = 0, iSettingsTab = 0;
 		PushFont(F::Render.FontBold);
 		FTabs(
 			{
-				{ "AIMBOT", "GENERAL", "DRAW" },
+				{ "AIMBOT", "GENERAL", "HVH" },
 				{ "VISUALS", "ESP", "MISC##", "RADAR", "MENU" },
 				{ "MISC", "MAIN", "HVH" },
 				{ "LOGS", "PLAYERLIST", "SETTINGS##", "OUTPUT" },
-				{ "SETTINGS", "CONFIG", "BINDS", "MATERIALS", "EXTRA" }
+				{ "SETTINGS", "CONFIG", "BINDS", "MATERIALS" }
 			},
 			{ &iTab, &iAimbotTab, &iVisualsTab, &iMiscTab, &iLogsTab, &iSettingsTab },
-			{ vWindowSize.x - H::Draw.Scale(150), H::Draw.Scale(60) }, // Width spans to the title area
-			{ H::Draw.Scale(16), H::Draw.Scale(16) }, // Padding from top-left
-			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarBottom, // Changed flags to Horizontal
+			{ vWindowSize.x - H::Draw.Scale(150), H::Draw.Scale(60) },
+			{ H::Draw.Scale(16), H::Draw.Scale(16) }, 
+			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarBottom,
 			{ { ICON_MD_GROUP }, { ICON_MD_IMAGE }, { ICON_MD_PUBLIC }, { ICON_MD_MENU_BOOK }, { ICON_MD_SETTINGS } },
 			{ H::Draw.Scale(16), 0 }, {},
 			{}, { H::Draw.Scale(22), 0 }
@@ -2382,194 +2380,277 @@ void CMenu::MenuSettings(int iTab)
 
 	switch (iTab)
 	{
-	// Settings
+		// Settings
 	case 0:
 	{
 		if (BeginTable("ConfigSettingsTable", 2))
 		{
-			/*
-			if (Section("Config"))
-			{
-				static int iCurrentType = 0;
-				PushFont(F::Render.FontBold);
-				FTabs({ "GENERAL", "VISUAL", }, &iCurrentType, { H::Draw.Scale(20), H::Draw.Scale(28) }, { GetWindowWidth(), 0 }, FTabsEnum::AlignReverse | FTabsEnum::Fit);
-				SetCursorPosY(GetCursorPosY() - H::Draw.Scale());
-				PopFont();
-
-				switch (iCurrentType)
-			*/
-
-			auto drawConfigs = [](std::string& sStaticName, bool bVisual = false)
-				{
-					auto& sPath = !bVisual ? F::Configs.m_sConfigPath : F::Configs.m_sVisualsPath;
-					auto& sConfig = !bVisual ? F::Configs.m_sCurrentConfig : F::Configs.m_sCurrentVisuals;
-					auto sType = !bVisual ? "Config" : "Visual";
-					bool bNoSave = GetAsyncKeyState(VK_SHIFT) & 0x8000;
-
-					FSDropdown("Name", &sStaticName, {}, FSDropdownEnum::AutoUpdate, -H::Draw.Unscale(FCalcTextSize("CREATE").x + FCalcTextSize("FOLDER").x) - 72);
-					PushDisabled(sStaticName.empty());
-					{
-						if (FButton("Create", FButtonEnum::Fit | FButtonEnum::SameLine, { 0, 40 }))
-						{
-							if (!std::filesystem::exists(sPath + sStaticName))
-							{
-								if (!bVisual)
-									F::Configs.SaveConfig(sStaticName);
-								else
-									F::Configs.SaveVisual(sStaticName);
-							}
-							sStaticName.clear();
-						}
-					}
-					PopDisabled();
-					if (FButton("Folder", FButtonEnum::Fit | FButtonEnum::SameLine, { 0, 40 }))
-						ShellExecuteA(NULL, NULL, sPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
-					vRowSizes.clear();
-
-					std::vector<std::pair<std::filesystem::directory_entry, std::string>> vConfigs = {};
-					bool bDefaultFound = false;
-					for (auto& tEntry : std::filesystem::directory_iterator(sPath))
-					{
-						if (!tEntry.is_regular_file() || tEntry.path().extension() != F::Configs.m_sConfigExtension)
-							continue;
-
-						std::string sName = tEntry.path().filename().string();
-						sName.erase(sName.end() - F::Configs.m_sConfigExtension.size(), sName.end());
-						if (FNV1A::Hash32(sName.c_str()) == FNV1A::Hash32Const("default"))
-							bDefaultFound = true;
-
-						vConfigs.emplace_back(tEntry, sName);
-					}
-					if (!bVisual)
-					{
-						if (!bDefaultFound)
-							F::Configs.SaveConfig("default");
-						std::sort(vConfigs.begin(), vConfigs.end(), [&](const auto& a, const auto& b) -> bool
-							{
-								// override for default config
-								if (FNV1A::Hash32(a.second.c_str()) == FNV1A::Hash32Const("default"))
-									return true;
-								if (FNV1A::Hash32(b.second.c_str()) == FNV1A::Hash32Const("default"))
-									return false;
-
-								return a.second < b.second;
-							});
-					}
-
-					for (auto& [entry, sConfigName] : vConfigs)
-					{
-						bool bCurrentConfig = FNV1A::Hash32(sConfigName.c_str()) == FNV1A::Hash32(sConfig.c_str());
-						ImVec2 vOriginalPos = GetCursorPos();
-
-						SetCursorPos({ vOriginalPos.x + H::Draw.Scale(2), vOriginalPos.y + H::Draw.Scale(9) });
-						bool bLoad = IconButton(bCurrentConfig ? ICON_MD_REFRESH : ICON_MD_DOWNLOAD);
-						FTooltip(ICON_MD_ADD ICON_MD_FILE_UPLOAD_OFF, bNoSave && IsItemHovered(), 300.f, F::Render.IconFont);
-
-						SetCursorPos({ H::Draw.Scale(43), vOriginalPos.y + H::Draw.Scale(14) });
-						TextColored(bCurrentConfig ? F::Render.Active.Value : F::Render.Inactive.Value, TruncateText(sConfigName, GetWindowWidth() - GetStyle().WindowPadding.x * 2 - H::Draw.Scale(80)).c_str());
-
-						int iOffset = 9;
-						SetCursorPos({ GetWindowWidth() - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(9) });
-						bool bDelete = IconButton(ICON_MD_DELETE);
-
-						SetCursorPos({ GetWindowWidth() - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(9) });
-						bool bSave = IconButton(ICON_MD_SAVE);
-						FTooltip(ICON_MD_ADD ICON_MD_FILE_DOWNLOAD_OFF, bNoSave && IsItemHovered(), 300.f, F::Render.IconFont);
-
-						if (bLoad)
-						{
-							if (!bVisual)
-								F::Configs.LoadConfig(sConfigName);
-							else
-								F::Configs.LoadVisual(sConfigName);
-						}
-						else if (bSave)
-						{
-							if (!bCurrentConfig || !bVisual && !F::Configs.m_sCurrentVisuals.empty())
-								OpenPopup(std::format("Save{}{}", sType, sConfigName).c_str());
-							else if (!bVisual)
-								F::Configs.SaveConfig(sConfigName);
-							else
-								F::Configs.SaveVisual(sConfigName);
-						}
-						else if (bDelete)
-							OpenPopup(std::format("Remove{}{}", sType, sConfigName).c_str());
-
-						if (FBeginPopupModal(std::format("Save{}{}", sType, sConfigName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding))
-						{
-							FText(std::format("Do you really want to override '{}'?", sConfigName).c_str());
-
-							if (FButton("Yes, override", FButtonEnum::Left))
-							{
-								if (!bVisual)
-									F::Configs.SaveConfig(sConfigName);
-								else
-									F::Configs.SaveVisual(sConfigName);
-								CloseCurrentPopup();
-							}
-							if (FButton("No", FButtonEnum::Right | FButtonEnum::SameLine))
-								CloseCurrentPopup();
-
-							EndPopup();
-						}
-						else if (FBeginPopupModal(std::format("Remove{}{}", sType, sConfigName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding))
-						{
-							FText(std::format("Do you really want to remove '{}'?", sConfigName).c_str());
-
-							PushDisabled(!bVisual && FNV1A::Hash32(sConfigName.c_str()) == FNV1A::Hash32Const("default"));
-							{
-								if (FButton("Yes, delete", FButtonEnum::Fit))
-								{
-									if (!bVisual)
-										F::Configs.DeleteConfig(sConfigName);
-									else
-										F::Configs.DeleteVisual(sConfigName);
-									CloseCurrentPopup();
-								}
-							}
-							PopDisabled();
-							if (FButton("Yes, reset", FButtonEnum::Fit | FButtonEnum::SameLine))
-							{
-								if (!bVisual)
-									F::Configs.ResetConfig(sConfigName);
-								else
-									F::Configs.ResetVisual(sConfigName);
-								CloseCurrentPopup();
-							}
-							if (FButton("No", FButtonEnum::Fit | FButtonEnum::SameLine))
-								CloseCurrentPopup();
-
-							EndPopup();
-						}
-
-						SetCursorPos(vOriginalPos); DebugDummy({ 0, H::Draw.Scale(28) });
-					}
-					DebugDummy({ 0, H::Draw.Scale(7) });
-				};
-
 			/* Column 1 */
 			TableNextColumn();
 			if (Section("Config"))
 			{
+				// Folder Buttons
+				if (FButton("CONFIGS FOLDER", FButtonEnum::Left))
+					ShellExecuteA(NULL, NULL, F::Configs.m_sConfigPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+				if (FButton("VISUALS FOLDER", FButtonEnum::Right | FButtonEnum::SameLine))
+					ShellExecuteA(NULL, NULL, F::Configs.m_sVisualsPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+
+				DebugDummy({ 0, H::Draw.Scale(4) });
+
+				// Tabs for General / Visuals
+				static int iConfigTab = 0;
+				PushFont(F::Render.FontBold);
+				FTabs({ "GENERAL", "VISUALS" }, &iConfigTab, { GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f, H::Draw.Scale(28) }, { 0, 0 }, FTabsEnum::Horizontal | FTabsEnum::AlignReverse | FTabsEnum::Fit);
+				PopFont();
+
+				DebugDummy({ 0, H::Draw.Scale(4) });
+
+				bool bVisual = (iConfigTab == 1);
+				auto& sPath = !bVisual ? F::Configs.m_sConfigPath : F::Configs.m_sVisualsPath;
+				auto& sConfig = !bVisual ? F::Configs.m_sCurrentConfig : F::Configs.m_sCurrentVisuals;
+				auto sType = !bVisual ? "Config" : "Visual";
+				bool bNoSave = GetAsyncKeyState(VK_SHIFT) & 0x8000;
+
 				static std::string sStaticName;
 
-				drawConfigs(sStaticName);
+				// Create Config Input
+				FSDropdown("Config name", &sStaticName, {}, FSDropdownEnum::AutoUpdate, -H::Draw.Unscale(FCalcTextSize("CREATE").x) - 40);
+				PushDisabled(sStaticName.empty());
+				{
+					if (FButton("CREATE", FButtonEnum::Fit | FButtonEnum::SameLine, { 0, 40 }))
+					{
+						if (!std::filesystem::exists(sPath + sStaticName))
+						{
+							if (!bVisual)
+								F::Configs.SaveConfig(sStaticName);
+							else
+								F::Configs.SaveVisual(sStaticName);
+						}
+						sStaticName.clear();
+					}
+				}
+				PopDisabled();
+
+				DebugDummy({ 0, H::Draw.Scale(8) });
+
+				// Config List
+				std::vector<std::pair<std::filesystem::directory_entry, std::string>> vConfigs = {};
+				bool bDefaultFound = false;
+				for (auto& tEntry : std::filesystem::directory_iterator(sPath))
+				{
+					if (!tEntry.is_regular_file() || tEntry.path().extension() != F::Configs.m_sConfigExtension)
+						continue;
+
+					std::string sName = tEntry.path().filename().string();
+					sName.erase(sName.end() - F::Configs.m_sConfigExtension.size(), sName.end());
+					if (FNV1A::Hash32(sName.c_str()) == FNV1A::Hash32Const("default"))
+						bDefaultFound = true;
+
+					vConfigs.emplace_back(tEntry, sName);
+				}
+				if (!bVisual)
+				{
+					if (!bDefaultFound)
+						F::Configs.SaveConfig("default");
+					std::sort(vConfigs.begin(), vConfigs.end(), [&](const auto& a, const auto& b) -> bool
+						{
+							if (FNV1A::Hash32(a.second.c_str()) == FNV1A::Hash32Const("default")) return true;
+							if (FNV1A::Hash32(b.second.c_str()) == FNV1A::Hash32Const("default")) return false;
+							return a.second < b.second;
+						});
+				}
+				else
+				{
+					std::sort(vConfigs.begin(), vConfigs.end(), [&](const auto& a, const auto& b) -> bool { return a.second < b.second; });
+				}
+
+				for (auto& [entry, sConfigName] : vConfigs)
+				{
+					bool bCurrentConfig = FNV1A::Hash32(sConfigName.c_str()) == FNV1A::Hash32(sConfig.c_str());
+					ImVec2 vOriginalPos = GetCursorPos();
+
+					// Centered Text
+					SetCursorPos({ H::Draw.Scale(12), vOriginalPos.y + H::Draw.Scale(7) });
+					TextColored(bCurrentConfig ? F::Render.Active.Value : F::Render.Inactive.Value, TruncateText(sConfigName, GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 2 - H::Draw.Scale(100)).c_str());
+
+					int iOffset = 9;
+					// Delete
+					SetCursorPos({ GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(2) });
+					bool bDelete = IconButton(ICON_MD_DELETE);
+
+					// Save
+					SetCursorPos({ GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(2) });
+					bool bSave = IconButton(ICON_MD_SAVE);
+					FTooltip(ICON_MD_ADD ICON_MD_FILE_DOWNLOAD_OFF, bNoSave && IsItemHovered(), 300.f, F::Render.IconFont);
+
+					// Load
+					SetCursorPos({ GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(2) });
+					bool bLoad = IconButton(bCurrentConfig ? ICON_MD_REFRESH : ICON_MD_DOWNLOAD);
+					FTooltip(ICON_MD_ADD ICON_MD_FILE_UPLOAD_OFF, bNoSave && IsItemHovered(), 300.f, F::Render.IconFont);
+
+					if (bLoad)
+					{
+						if (!bVisual) F::Configs.LoadConfig(sConfigName);
+						else F::Configs.LoadVisual(sConfigName);
+					}
+					else if (bSave)
+					{
+						if (!bCurrentConfig || (!bVisual && !F::Configs.m_sCurrentVisuals.empty()))
+							OpenPopup(std::format("Save{}{}", sType, sConfigName).c_str());
+						else if (!bVisual)
+							F::Configs.SaveConfig(sConfigName);
+						else
+							F::Configs.SaveVisual(sConfigName);
+					}
+					else if (bDelete)
+						OpenPopup(std::format("Remove{}{}", sType, sConfigName).c_str());
+
+					if (FBeginPopupModal(std::format("Save{}{}", sType, sConfigName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding))
+					{
+						FText(std::format("Do you really want to override '{}'?", sConfigName).c_str());
+
+						if (FButton("Yes, override", FButtonEnum::Left))
+						{
+							if (!bVisual) F::Configs.SaveConfig(sConfigName);
+							else F::Configs.SaveVisual(sConfigName);
+							CloseCurrentPopup();
+						}
+						if (FButton("No", FButtonEnum::Right | FButtonEnum::SameLine))
+							CloseCurrentPopup();
+
+						EndPopup();
+					}
+					else if (FBeginPopupModal(std::format("Remove{}{}", sType, sConfigName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding))
+					{
+						FText(std::format("Do you really want to remove '{}'?", sConfigName).c_str());
+
+						PushDisabled(!bVisual && FNV1A::Hash32(sConfigName.c_str()) == FNV1A::Hash32Const("default"));
+						{
+							if (FButton("Yes, delete", FButtonEnum::Fit))
+							{
+								if (!bVisual) F::Configs.DeleteConfig(sConfigName);
+								else F::Configs.DeleteVisual(sConfigName);
+								CloseCurrentPopup();
+							}
+						}
+						PopDisabled();
+						if (FButton("Yes, reset", FButtonEnum::Fit | FButtonEnum::SameLine))
+						{
+							if (!bVisual) F::Configs.ResetConfig(sConfigName);
+							else F::Configs.ResetVisual(sConfigName);
+							CloseCurrentPopup();
+						}
+						if (FButton("No", FButtonEnum::Fit | FButtonEnum::SameLine))
+							CloseCurrentPopup();
+
+						EndPopup();
+					}
+
+					SetCursorPos(vOriginalPos); DebugDummy({ 0, H::Draw.Scale(28) });
+				}
+				DebugDummy({ 0, H::Draw.Scale(7) });
+
 			} EndSection();
+
 			PushStyleColor(ImGuiCol_Text, F::Render.Inactive.Value);
 			SetCursorPosX(GetCursorPosX() + GetStyle().WindowPadding.x);
 			FText("Built @ " __DATE__ ", " __TIME__ ", " __CONFIGURATION__);
-			//SetCursorPosX(GetCursorPosX() + GetStyle().WindowPadding.x);
-			//FText(std::format("Time @ {}, {}", SDK::GetDate(), SDK::GetTime()).c_str());
 			PopStyleColor();
 
 			/* Column 2 */
 			TableNextColumn();
-			if (Section("Visuals"))
+			if (Section("Debug", 8))
 			{
-				static std::string sStaticName;
-
-				drawConfigs(sStaticName, true);
+				FToggle(Vars::Debug::Info, FToggleEnum::Left);
+				FToggle(Vars::Debug::Logging, FToggleEnum::Right);
+				FToggle(Vars::Debug::DrawHitboxes, FToggleEnum::Left);
+				FToggle(Vars::Debug::AntiAimLines, FToggleEnum::Right);
+				FToggle(Vars::Debug::CrashLogging, FToggleEnum::Left);
+				FToggle(Vars::Debug::Options, FToggleEnum::Right);
+#ifdef DEBUG_TRACES
+				FToggle(Vars::Debug::VisualizeTraces, FToggleEnum::Left);
+				FToggle(Vars::Debug::VisualizeTraceHits, FToggleEnum::Right);
+#endif
 			} EndSection();
+
+			if (Section("Extra", 8))
+			{
+				if (FButton("CL_FULLUPDATE", FButtonEnum::Left))
+					I::EngineClient->ClientCmd_Unrestricted("cl_fullupdate");
+				if (FButton("RETRY", FButtonEnum::Right | FButtonEnum::SameLine))
+					I::EngineClient->ClientCmd_Unrestricted("retry");
+				if (FButton("CONSOLE", FButtonEnum::Left))
+					I::EngineClient->ClientCmd_Unrestricted("toggleconsole");
+				if (FButton("FIX CHAMS", FButtonEnum::Right | FButtonEnum::SameLine) && F::Materials.m_bLoaded)
+					F::Materials.ReloadMaterials();
+
+				if (!I::EngineClient->IsConnected())
+				{
+					if (FButton("UNLOCK ACHIEVEMENTS", FButtonEnum::Left))
+						OpenPopup("UnlockAchievements");
+					if (FButton("LOCK ACHIEVEMENTS", FButtonEnum::Right | FButtonEnum::SameLine))
+						OpenPopup("LockAchievements");
+
+					if (FBeginPopupModal("UnlockAchievements", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding))
+					{
+						FText("Do you really want to unlock all achievements?");
+
+						if (FButton("Yes, unlock", FButtonEnum::Left))
+						{
+							F::Misc.UnlockAchievements();
+							CloseCurrentPopup();
+						}
+						if (FButton("No", FButtonEnum::Right | FButtonEnum::SameLine))
+							CloseCurrentPopup();
+
+						EndPopup();
+					}
+					else if (FBeginPopupModal("LockAchievements", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding))
+					{
+						FText("Do you really want to lock all achievements?");
+
+						if (FButton("Yes, lock", FButtonEnum::Left))
+						{
+							F::Misc.LockAchievements();
+							CloseCurrentPopup();
+						}
+						if (FButton("No", FButtonEnum::Right | FButtonEnum::SameLine))
+							CloseCurrentPopup();
+
+						EndPopup();
+					}
+				}
+			} EndSection();
+
+			if (Vars::Debug::Options.Value && I::EngineClient->IsConnected())
+			{
+				if (Section("##DebugLines", -8))
+				{
+					if (FButton("Restore lines", FButtonEnum::Left))
+					{
+						for (auto& tLine : G::LineStorage)
+							tLine.m_flTime = I::GlobalVars->curtime + 60.f;
+					}
+					if (FButton("Restore paths", FButtonEnum::Right | FButtonEnum::SameLine))
+					{
+						for (auto& tPath : G::PathStorage)
+							tPath.m_flTime = I::GlobalVars->curtime + 60.f;
+					}
+					if (FButton("Restore boxes", FButtonEnum::Left))
+					{
+						for (auto& tBox : G::BoxStorage)
+							tBox.m_flTime = I::GlobalVars->curtime + 60.f;
+					}
+					if (FButton("Clear visuals", FButtonEnum::Right | FButtonEnum::SameLine))
+					{
+						G::LineStorage.clear();
+						G::PathStorage.clear();
+						G::BoxStorage.clear();
+						G::SphereStorage.clear();
+						G::SweptStorage.clear();
+					}
+				} EndSection();
+			}
 
 			EndTable();
 		}
@@ -3119,7 +3200,7 @@ void CMenu::MenuSettings(int iTab)
 						TextEditor.SetPaletteIndex(TextEditor::PaletteIndex::Punctuation, F::Render.Inactive);
 						TextEditor.SetPaletteIndex(TextEditor::PaletteIndex::ControlCharacter, ImColor(F::Render.Inactive.Value.x, F::Render.Inactive.Value.y, F::Render.Inactive.Value.z, 0.1f));
 						TextEditor.SetPaletteIndex(TextEditor::PaletteIndex::String, F::Render.Accent);
-						
+
 						PushFont(F::Render.FontMono);
 						ImVec2 vDrawPos = GetDrawPos() + GetCursorPos();
 						TextEditor.Render("TextEditor");
