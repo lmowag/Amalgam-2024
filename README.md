@@ -15,12 +15,9 @@
   [![Freetype AVX2](.github/assets/freetype_avx2.svg)](https://nightly.link/lmowag/Amalgam-2024/workflows/msbuild/master/Amalgamx64ReleaseFreetypeAVX2.zip)
   [![PDB Freetype AVX2](.github/assets/pdb.svg)](https://nightly.link/lmowag/Amalgam-2024/workflows/msbuild/master/Amalgamx64ReleasePDB.zip)
 
+##
   <sub>AVX2 may be faster than SSE2 though not all CPUs support it (`Steam > Help > System Information > Processor Information > AVX2`). Freetype uses freetype as the text rasterizer and includes some custom fonts, which results in better looking text but larger DLL sizes. PDBs are for developer use. </sub>
   <br><br>
   <sub>If nightly.link is down or can't be accessed, you can still download through [GitHub](https://github.com/lmowag/Amalgam-2024/actions) with an account. </sub>
-
-  ##
-
-  Read about Amalgam's documentation and features [here](../../wiki). 
 
 </div>
