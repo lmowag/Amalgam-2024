@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 
+// The main menu
 void CMenu::DrawMenu()
 {
 	using namespace ImGui;
@@ -39,6 +40,7 @@ void CMenu::DrawMenu()
 		auto pDrawList = GetWindowDrawList();
 
 		pDrawList->AddRectFilled(vDrawPos, { vDrawPos.x + vWindowSize.x, vDrawPos.y + vWindowSize.y }, F::Render.Background0, H::Draw.Scale(6));
+
 
 		if (!Vars::Menu::CheatTitle.Value.empty())
 		{
@@ -65,45 +67,29 @@ void CMenu::DrawMenu()
 			{ vWindowSize.x - H::Draw.Scale(150), H::Draw.Scale(60) }, // Width spans to the title area
 			{ H::Draw.Scale(16), H::Draw.Scale(16) }, // Padding from top-left
 			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarBottom, // Changed flags to Horizontal
-			{ { ICON_MD_GROUP }, { ICON_MD_IMAGE }, { ICON_MD_PUBLIC }, { ICON_MD_MENU_BOOK }, { ICON_MD_SETTINGS } },
+			{ { ICON_MD_PERSON }, { ICON_MD_VISIBILITY }, { ICON_MD_ARTICLE }, { ICON_MD_IMPORT_CONTACTS }, { ICON_MD_SETTINGS } },
 			{ H::Draw.Scale(16), 0 }, {},
 			{}, { H::Draw.Scale(22), 0 }
 		);
 		PopFont();
 
-		static std::string sSearch = "";
-		SetCursorPos({ vWindowSize.x - H::Draw.Scale(150), vWindowSize.y - H::Draw.Scale(36) });
-		FInputText("Search...", sSearch, H::Draw.Scale(134), ImGuiInputTextFlags_None);
-		bool bSearch = !sSearch.empty();
-		if (!bSearch || FCalcTextSize(sSearch.c_str()).x < 86.f)
-		{
-			SetCursorPos({ vWindowSize.x - H::Draw.Scale(36), vWindowSize.y - H::Draw.Scale(31) });
-			IconImage(ICON_MD_SEARCH);
-		}
-		if (bSearch && IsMouseReleased(ImGuiMouseButton_Left) && IsMouseWithin(vDrawPos.x + vWindowSize.x - H::Draw.Scale(150), vDrawPos.y + vWindowSize.y - H::Draw.Scale(45), H::Draw.Scale(140), H::Draw.Scale(45)))
-			sSearch = "";
-
 		// Main Content Area
-		float contentYOffset = H::Draw.Scale(90);
+		float contentYOffset = H::Draw.Scale(90); 
 		SetCursorPos({ H::Draw.Scale(16), contentYOffset });
 
 		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 		PushStyleVar(ImGuiStyleVar_WindowPadding, { H::Draw.Scale(0), H::Draw.Scale(0) });
-		if (BeginChild("Page", { vWindowSize.x - H::Draw.Scale(32), vWindowSize.y - contentYOffset - H::Draw.Scale(45) }, ImGuiChildFlags_AlwaysUseWindowPadding))
+
+		if (BeginChild("Page", { vWindowSize.x - H::Draw.Scale(32), vWindowSize.y - contentYOffset - H::Draw.Scale(16) }, ImGuiChildFlags_AlwaysUseWindowPadding))
 		{
-			if (!bSearch)
+			switch (iTab)
 			{
-				switch (iTab)
-				{
-				case 0: MenuAimbot(iAimbotTab); break;
-				case 1: MenuVisuals(iVisualsTab); break;
-				case 2: MenuMisc(iMiscTab); break;
-				case 3: MenuLogs(iLogsTab); break;
-				case 4: MenuSettings(iSettingsTab); break;
-				}
+			case 0: MenuAimbot(iAimbotTab); break;
+			case 1: MenuVisuals(iVisualsTab); break;
+			case 2: MenuMisc(iMiscTab); break;
+			case 3: MenuLogs(iLogsTab); break;
+			case 4: MenuSettings(iSettingsTab); break;
 			}
-			else
-				MenuSearch(sSearch);
 		}
 		EndChild();
 		PopStyleVar(2);
