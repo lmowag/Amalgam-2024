@@ -428,27 +428,23 @@ void CTicks::Draw(CTFPlayer* pLocal)
 		int iPosX = dtPos.x - iSizeX / 2;
 		int iPosY = dtPos.y + fFont.m_nTall + H::Draw.Scale(4) + 1;
 
-		Color_t cOutline = { 0, 0, 0, 255 }; // Solid black outline
+		Color_t cOutline = { 0, 0, 0, 255 };
 		Color_t cText = Vars::Menu::Theme::Active.Value;
 		Color_t cAccent = Vars::Menu::Theme::Accent.Value;
 
-		// 1. Draw "Ticks X / X" text
 		H::Draw.StringOutlined(fFont, dtPos.x, dtPos.y + 2, cText, cOutline, ALIGN_TOP, std::format("Ticks {} / {}", iTicks, iMax).c_str());
 
-		// 2. Draw "Not Ready" text if waiting
 		if (m_iWait)
 			H::Draw.StringOutlined(fFont, dtPos.x, dtPos.y + fFont.m_nTall + H::Draw.Scale(18) + 1, cText, cOutline, ALIGN_TOP, "Not Ready");
 
-		// 3. Draw Thick Black Background (The Outline Box)
 		H::Draw.FillRoundRect(iPosX, iPosY, iSizeX, iSizeY, H::Draw.Scale(4), cOutline);
 
-		// 4. Draw the colored inner bar (Shifted inward by 2 pixels, exactly like Fedoraware)
 		if (flRatio > 0.f)
 		{
-			// Calculate the exact pixel width of the filled portion
+
 			float innerWidth = flRatio * (iSizeX - H::Draw.Scale(4));
 
-			// Draw the smaller inner box shifted by +2 pixels
+
 			H::Draw.FillRoundRect(
 				iPosX + H::Draw.Scale(2),
 				iPosY + H::Draw.Scale(2),
