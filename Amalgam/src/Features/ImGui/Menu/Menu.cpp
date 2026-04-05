@@ -25,8 +25,8 @@ void CMenu::DrawMenu()
 	static bool bSetPosition = false;
 	if (!bSetPosition)
 	{
-		SetNextWindowPos((GetIO().DisplaySize - ImVec2(H::Draw.Scale(750), H::Draw.Scale(500))) / 2, ImGuiCond_FirstUseEver);
-		SetNextWindowSize({ H::Draw.Scale(750), H::Draw.Scale(500) }, ImGuiCond_FirstUseEver);
+		SetNextWindowPos((GetIO().DisplaySize - ImVec2(H::Draw.Scale(800), H::Draw.Scale(550))) / 2, ImGuiCond_FirstUseEver);
+		SetNextWindowSize({ H::Draw.Scale(800), H::Draw.Scale(550) }, ImGuiCond_FirstUseEver);
 		bSetPosition = true;
 	}
 
@@ -35,44 +35,19 @@ void CMenu::DrawMenu()
 	{
 		ImVec2 vWindowPos = GetWindowPos();
 		ImVec2 vWindowSize = GetWindowSize();
-		float flSideSize = 140.f;
-
-		PushClipRect({ 0, 0 }, { ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y }, false);
-		RenderTwoToneBackground(H::Draw.Scale(flSideSize), F::Render.Background0, F::Render.Background1, F::Render.Background2, 0.f, false);
-		PopClipRect();
-
 		ImVec2 vDrawPos = GetDrawPos();
 		auto pDrawList = GetWindowDrawList();
-		
-		float flOffset = 0.f;
-		Bind_t tBind;
-		if (!F::Binds.GetBind(CurrentBind, &tBind))
-			CurrentBind = DEFAULT_BIND;
 
-		if (CurrentBind != DEFAULT_BIND) // bind
+		pDrawList->AddRectFilled(vDrawPos, { vDrawPos.x + vWindowSize.x, vDrawPos.y + vWindowSize.y }, F::Render.Background0, H::Draw.Scale(6));
+
+		if (!Vars::Menu::CheatTitle.Value.empty())
 		{
-			flOffset = H::Draw.Scale(60);
-			pDrawList->AddRectFilled({ vDrawPos.x, vDrawPos.y + H::Draw.Scale(59) }, { vDrawPos.x + H::Draw.Scale(flSideSize - 1), vDrawPos.y + H::Draw.Scale(60) }, F::Render.Background2);
-
-			SetCursorPos({ H::Draw.Scale(12), H::Draw.Scale(11) });
-			FText("Editing bind", 0, F::Render.FontRegular);
-			SetCursorPos({ H::Draw.Scale(12), H::Draw.Scale(35) });
 			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
-			FText(TruncateText(tBind.m_sName, H::Draw.Scale(flSideSize - 28)).c_str(), 0, F::Render.FontRegular);
-			PopStyleColor();
-
-			SetCursorPos({ H::Draw.Scale(flSideSize - 31), H::Draw.Scale(6) });
-			if (IconButton(ICON_MD_CANCEL))
-				CurrentBind = DEFAULT_BIND;
-		}
-		else if (!Vars::Menu::CheatTitle.Value.empty()) // title
-		{
-			flOffset = H::Draw.Scale(36);
-			pDrawList->AddRectFilled({ vDrawPos.x, vDrawPos.y + H::Draw.Scale(35) }, { vDrawPos.x + H::Draw.Scale(flSideSize - 1), vDrawPos.y + H::Draw.Scale(36) }, F::Render.Background2);
-			
-			SetCursorPos({ H::Draw.Scale(12), H::Draw.Scale(11) });
-			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
-			FText(TruncateText(Vars::Menu::CheatTitle.Value, H::Draw.Scale(flSideSize - 28), F::Render.FontBold).c_str(), 0, F::Render.FontBold);
+			PushFont(F::Render.FontBold);
+			ImVec2 titleSize = FCalcTextSize(Vars::Menu::CheatTitle.Value.c_str());
+			SetCursorPos({ vWindowSize.x - titleSize.x - H::Draw.Scale(16), H::Draw.Scale(18) });
+			FText(Vars::Menu::CheatTitle.Value.c_str());
+			PopFont();
 			PopStyleColor();
 		}
 
@@ -87,31 +62,35 @@ void CMenu::DrawMenu()
 				{ "SETTINGS", "CONFIG", "BINDS", "MATERIALS", "EXTRA" }
 			},
 			{ &iTab, &iAimbotTab, &iVisualsTab, &iMiscTab, &iLogsTab, &iSettingsTab },
-			{ H::Draw.Scale(flSideSize - 16), H::Draw.Scale(36) },
-			{ H::Draw.Scale(8), H::Draw.Scale(8) + flOffset },
-			FTabsEnum::Vertical | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarLeft,
+			{ vWindowSize.x - H::Draw.Scale(150), H::Draw.Scale(60) }, // Width spans to the title area
+			{ H::Draw.Scale(16), H::Draw.Scale(16) }, // Padding from top-left
+			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarBottom, // Changed flags to Horizontal
 			{ { ICON_MD_PERSON }, { ICON_MD_VISIBILITY }, { ICON_MD_ARTICLE }, { ICON_MD_IMPORT_CONTACTS }, { ICON_MD_SETTINGS } },
-			{ H::Draw.Scale(10), 0 }, {},
+			{ H::Draw.Scale(16), 0 }, {},
 			{}, { H::Draw.Scale(22), 0 }
 		);
 		PopFont();
 
+
 		static std::string sSearch = "";
-		SetCursorPos({ H::Draw.Scale(8), vWindowSize.y - H::Draw.Scale(37) });
-		FInputText("Search...", sSearch, H::Draw.Scale(123), ImGuiInputTextFlags_None);
-		bool bSearch = /*IsItemFocused() ||*/ !sSearch.empty();
+		SetCursorPos({ vWindowSize.x - H::Draw.Scale(150), vWindowSize.y - H::Draw.Scale(36) });
+		FInputText("Search...", sSearch, H::Draw.Scale(134), ImGuiInputTextFlags_None);
+		bool bSearch = !sSearch.empty();
 		if (!bSearch || FCalcTextSize(sSearch.c_str()).x < 86.f)
 		{
-			SetCursorPos({ H::Draw.Scale(109), vWindowSize.y - H::Draw.Scale(31) });
+			SetCursorPos({ vWindowSize.x - H::Draw.Scale(36), vWindowSize.y - H::Draw.Scale(31) });
 			IconImage(ICON_MD_SEARCH);
 		}
-		if (bSearch && IsMouseReleased(ImGuiMouseButton_Left) && IsMouseWithin(vDrawPos.x, vDrawPos.y, H::Draw.Scale(140), vWindowSize.y - H::Draw.Scale(45)))
+		if (bSearch && IsMouseReleased(ImGuiMouseButton_Left) && IsMouseWithin(vDrawPos.x + vWindowSize.x - H::Draw.Scale(150), vDrawPos.y + vWindowSize.y - H::Draw.Scale(45), H::Draw.Scale(140), H::Draw.Scale(45)))
 			sSearch = "";
 
-		SetCursorPos({ H::Draw.Scale(flSideSize), 0 });
+		// Main Content Area
+		float contentYOffset = H::Draw.Scale(90);
+		SetCursorPos({ H::Draw.Scale(16), contentYOffset });
+
 		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-		PushStyleVar(ImGuiStyleVar_WindowPadding, { H::Draw.Scale(8), H::Draw.Scale(8) });
-		if (BeginChild("Page", { vWindowSize.x - H::Draw.Scale(flSideSize), vWindowSize.y }, ImGuiChildFlags_AlwaysUseWindowPadding))
+		PushStyleVar(ImGuiStyleVar_WindowPadding, { H::Draw.Scale(0), H::Draw.Scale(0) });
+		if (BeginChild("Page", { vWindowSize.x - H::Draw.Scale(32), vWindowSize.y - contentYOffset - H::Draw.Scale(45) }, ImGuiChildFlags_AlwaysUseWindowPadding))
 		{
 			if (!bSearch)
 			{
@@ -126,12 +105,49 @@ void CMenu::DrawMenu()
 			}
 			else
 				MenuSearch(sSearch);
-		} EndChild();
+		}
+		EndChild();
 		PopStyleVar(2);
 
 		End();
 	}
 	PopStyleVar();
+
+	Bind_t tBind;
+	if (!F::Binds.GetBind(CurrentBind, &tBind))
+		CurrentBind = DEFAULT_BIND;
+
+	if (CurrentBind != DEFAULT_BIND)
+	{
+		ImVec2 vMainPos = GetWindowPos();
+		ImVec2 vMainSize = GetWindowSize();
+
+		SetNextWindowPos({ vMainPos.x, vMainPos.y + vMainSize.y + H::Draw.Scale(8) }, ImGuiCond_Always);
+		SetNextWindowSize({ H::Draw.Scale(250), H::Draw.Scale(40) });
+
+		PushStyleVar(ImGuiStyleVar_WindowMinSize, { H::Draw.Scale(200), H::Draw.Scale(40) });
+		PushStyleVar(ImGuiStyleVar_WindowPadding, { H::Draw.Scale(12), H::Draw.Scale(10) });
+		PushStyleVar(ImGuiStyleVar_WindowRounding, H::Draw.Scale(4));
+		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+
+		if (Begin("EditingBindPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
+		{
+			FText("Editing bind", 0, F::Render.FontRegular);
+
+			SameLine();
+			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
+			FText(TruncateText(tBind.m_sName, H::Draw.Scale(120)).c_str(), 0, F::Render.FontRegular);
+			PopStyleColor();
+
+			SameLine(GetWindowWidth() - H::Draw.Scale(28));
+			SetCursorPosY(H::Draw.Scale(8));
+			if (IconButton(ICON_MD_CANCEL))
+				CurrentBind = DEFAULT_BIND;
+		}
+		End();
+
+		PopStyleVar(4);
+	}
 }
 
 #pragma region Tabs
@@ -3745,7 +3761,8 @@ void CMenu::DrawBinds()
 		if (m_bIsOpen)
 			FSet(Vars::Menu::BindsDisplay, info);
 
-		PushFont(F::Render.FontLarge);
+	
+	PushFont(F::Render.FontLarge);
 		SetCursorPos({ H::Draw.Scale(11), H::Draw.Scale(9) });
 		FText("Binds");
 		PopFont();
@@ -3820,8 +3837,8 @@ void CMenu::Render()
 	DrawBinds();
 	if (m_bIsOpen)
 	{
-		ManageVars();
-		DrawMenu();
+			ManageVars();
+			DrawMenu();
 
 		AddDraggable("Ticks", Vars::Menu::TicksDisplay, FGet(Vars::Menu::Indicators) & Vars::Menu::IndicatorsEnum::Ticks);
 		AddDraggable("Crit hack", Vars::Menu::CritsDisplay, FGet(Vars::Menu::Indicators) & Vars::Menu::IndicatorsEnum::CritHack);
