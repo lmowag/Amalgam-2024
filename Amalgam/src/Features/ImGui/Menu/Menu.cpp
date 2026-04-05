@@ -65,12 +65,11 @@ void CMenu::DrawMenu()
 			{ vWindowSize.x - H::Draw.Scale(150), H::Draw.Scale(60) }, // Width spans to the title area
 			{ H::Draw.Scale(16), H::Draw.Scale(16) }, // Padding from top-left
 			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarBottom, // Changed flags to Horizontal
-			{ { ICON_MD_PERSON }, { ICON_MD_VISIBILITY }, { ICON_MD_ARTICLE }, { ICON_MD_IMPORT_CONTACTS }, { ICON_MD_SETTINGS } },
+			{ { ICON_MD_GROUP }, { ICON_MD_IMAGE }, { ICON_MD_PUBLIC }, { ICON_MD_MENU_BOOK }, { ICON_MD_SETTINGS } },
 			{ H::Draw.Scale(16), 0 }, {},
 			{}, { H::Draw.Scale(22), 0 }
 		);
 		PopFont();
-
 
 		static std::string sSearch = "";
 		SetCursorPos({ vWindowSize.x - H::Draw.Scale(150), vWindowSize.y - H::Draw.Scale(36) });
