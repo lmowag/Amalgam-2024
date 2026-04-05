@@ -1,4 +1,6 @@
 #include "Menu.h"
+#include <format>
+#include <chrono>
 
 #include "Components.h"
 #include "../../Configs/Configs.h"
@@ -10,6 +12,11 @@
 #include "../../Visuals/Visuals.h"
 #include "../../Misc/Misc.h"
 #include "../../Output/Output.h"
+
+
+#pragma comment(lib, "wininet.lib")
+#include <fstream>
+#include <sstream>
 
 void CMenu::DrawMenu()
 {
@@ -74,7 +81,7 @@ void CMenu::DrawMenu()
 		FTabs(
 			{
 				{ "AIMBOT", "GENERAL", "DRAW" },
-				{ "VISUALS", "ESP", "MISC##", "MENU" },
+				{ "VISUALS", "ESP", "MISC##", "RADAR", "MENU" },
 				{ "MISC", "MAIN", "HVH" },
 				{ "LOGS", "PLAYERLIST", "SETTINGS##", "OUTPUT" },
 				{ "SETTINGS", "CONFIG", "BINDS", "MATERIALS", "EXTRA" }
@@ -947,8 +954,59 @@ void CMenu::MenuVisuals(int iTab)
 		}
 		break;
 	}
-	// Menu
+	// Radar
 	case 2:
+	{
+		if (BeginTable("VisualsRadarTable", 2))
+		{
+			/* Column 1 */
+			TableNextColumn();
+			{
+				if (Section("Main", 8))
+				{
+					FToggle(Vars::Radar::Main::Enabled, FToggleEnum::Left);
+					FToggle(Vars::Radar::Main::DrawOutOfRange, FToggleEnum::Right);
+					FDropdown(Vars::Radar::Main::Style);
+					FSlider(Vars::Radar::Main::Range);
+					FSlider(Vars::Radar::Main::BackgroundAlpha);
+					FSlider(Vars::Radar::Main::LineAlpha);
+				} EndSection();
+				if (Section("Player", 8))
+				{
+					FToggle(Vars::Radar::Player::Enabled, FToggleEnum::Left);
+					FToggle(Vars::Radar::Player::Background, FToggleEnum::Right);
+					FDropdown(Vars::Radar::Player::Draw, FDropdownEnum::Left);
+					FDropdown(Vars::Radar::Player::Icon, FDropdownEnum::Right);
+					FSlider(Vars::Radar::Player::Size);
+					FToggle(Vars::Radar::Player::Health, FToggleEnum::Left);
+					FToggle(Vars::Radar::Player::Height, FToggleEnum::Right);
+				} EndSection();
+			}
+			/* Column 2 */
+			TableNextColumn();
+			{
+				if (Section("Building", 8))
+				{
+					FToggle(Vars::Radar::Building::Enabled, FToggleEnum::Left, nullptr);
+					FToggle(Vars::Radar::Building::Background, FToggleEnum::Right, nullptr);
+					FDropdown(Vars::Radar::Building::Draw);
+					FSlider(Vars::Radar::Building::Size);
+					FToggle(Vars::Radar::Building::Health);
+				} EndSection();
+				if (Section("World", 8))
+				{
+					FToggle(Vars::Radar::World::Enabled, FToggleEnum::Left);
+					FToggle(Vars::Radar::World::Background, FToggleEnum::Right);
+					FDropdown(Vars::Radar::World::Draw);
+					FSlider(Vars::Radar::World::Size);
+				} EndSection();
+			}
+			EndTable();
+		}
+		break;
+	}
+	// Menu
+	case 3:
 	{
 		if (BeginTable("MenuTable", 2))
 		{
