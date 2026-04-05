@@ -817,6 +817,53 @@ NAMESPACE_BEGIN(Vars)
 		NAMESPACE_END(Sound)
 	NAMESPACE_END(Misc)
 
+			NAMESPACE_BEGIN(Radar)
+			NAMESPACE_BEGIN(Main, Radar)
+			CVar(Enabled, VA_LIST("Enabled", "Radar enabled"), false, VISUAL);
+		CVar(DrawOutOfRange, "Draw out of range", true, VISUAL);
+		CVarEnum(Style, VA_LIST("Style", "Radar style"), 0, VISUAL, nullptr,
+			VA_LIST("Circle", "Rectangle"),
+			Circle, Rectangle);
+		CVar(Window, "Radar window", WindowBox_t(), NOBIND);
+		CVar(Range, VA_LIST("Range", "Radar range"), 1500, VISUAL | SLIDER_MIN | SLIDER_PRECISION, 50, 3000, 50);
+		CVar(BackgroundAlpha, VA_LIST("Background alpha", "Radar background alpha"), 128, VISUAL | SLIDER_CLAMP, 0, 255, 5);
+		CVar(LineAlpha, VA_LIST("Line alpha", "Radar line alpha"), 255, VISUAL | SLIDER_CLAMP, 0, 255, 5);
+		NAMESPACE_END(Main)
+
+			NAMESPACE_BEGIN(Player, Player Radar)
+			CVar(Enabled, VA_LIST("Enabled", "Radar player enabled"), false, VISUAL);
+		CVar(Background, VA_LIST("Background", "Radar player background"), true, VISUAL);
+		CVarEnum(Draw, VA_LIST("Draw", "Radar player draw"), 0b1001010, VISUAL | DROPDOWN_MULTI, nullptr,
+			VA_LIST("Local", "Enemy", "Team", "Friends", "Party", "Prioritized", "Cloaked"),
+			Local = 1 << 0, Enemy = 1 << 1, Team = 1 << 2, Prioritized = 1 << 3, Friends = 1 << 4, Party = 1 << 5, Cloaked = 1 << 6);
+		CVarEnum(Icon, VA_LIST("Icon", "Radar player icon"), 1, VISUAL, nullptr,
+			VA_LIST("Icons", "Portraits", "Avatar"),
+			Icons, Portraits, Avatars);
+		CVar(Size, VA_LIST("Size", "Radar player size"), 24, VISUAL, 12, 30, 2);
+		CVar(Health, VA_LIST("Health bar", "Radar player health bar"), false, VISUAL);
+		CVar(Height, VA_LIST("Height indicator", "Radar player height indicator"), false, VISUAL);
+		NAMESPACE_END(Player)
+
+			NAMESPACE_BEGIN(Building, Building Radar)
+			CVar(Enabled, VA_LIST("Enabled", "Radar building enabled"), false, VISUAL);
+		CVar(Background, VA_LIST("Background", "Radar building background"), true, VISUAL);
+		CVarEnum(Draw, VA_LIST("Draw", "Radar building draw"), 0b001011, VISUAL | DROPDOWN_MULTI, nullptr,
+			VA_LIST("Local", "Enemy", "Team", "Friends", "Party", "Prioritized"),
+			Local = 1 << 0, Enemy = 1 << 1, Team = 1 << 2, Prioritized = 1 << 3, Friends = 1 << 4, Party = 1 << 5);
+		CVar(Size, VA_LIST("Size", "Radar building size"), 18, VISUAL, 12, 30, 2);
+		CVar(Health, VA_LIST("Health bar", "Radar building health bar"), false, VISUAL);
+		NAMESPACE_END(Building)
+
+			NAMESPACE_BEGIN(World, World Radar)
+			CVar(Enabled, VA_LIST("Enabled", "Radar world enabled"), false, VISUAL);
+		CVar(Background, VA_LIST("Background", "Radar world background"), true, VISUAL);
+		CVarEnum(Draw, VA_LIST("Draw", "Radar world draw"), 0b0000011, VISUAL | DROPDOWN_MULTI, nullptr,
+			VA_LIST("Health", "Ammo", "Money", "Bombs", "Powerup", "Spellbook", "Gargoyle"),
+			Health = 1 << 0, Ammo = 1 << 1, Money = 1 << 2, Bombs = 1 << 3, Powerup = 1 << 4, Spellbook = 1 << 5, Gargoyle = 1 << 6);
+		CVar(Size, VA_LIST("Size", "Radar world size"), 14, VISUAL, 12, 30, 2);
+		NAMESPACE_END(World)
+			NAMESPACE_END(Radar)
+
 	NAMESPACE_BEGIN(Logging)
 		CVarEnum(Logs, "Logs", 0b0000011, DROPDOWN_MULTI, "Off",
 			VA_LIST("Vote start", "Vote cast", "Class changes", "Damage", "Cheat detection", "Tags", "Aliases", "Resolver"),
