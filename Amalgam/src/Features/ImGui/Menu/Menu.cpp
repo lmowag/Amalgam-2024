@@ -37,14 +37,16 @@ void CMenu::DrawMenu()
 		ImVec2 vDrawPos = GetDrawPos();
 		auto pDrawList = GetWindowDrawList();
 
+		// Draw solid background for the whole menu
 		pDrawList->AddRectFilled(vDrawPos, { vDrawPos.x + vWindowSize.x, vDrawPos.y + vWindowSize.y }, F::Render.Background0, H::Draw.Scale(6));
 
+		// Draw Title (Top Right)
 		if (!Vars::Menu::CheatTitle.Value.empty())
 		{
 			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
 			PushFont(F::Render.FontBold);
 			ImVec2 titleSize = FCalcTextSize(Vars::Menu::CheatTitle.Value.c_str());
-			SetCursorPos({ vWindowSize.x - titleSize.x - H::Draw.Scale(16), H::Draw.Scale(18) });
+			SetCursorPos({ vWindowSize.x - titleSize.x - H::Draw.Scale(20), H::Draw.Scale(25) }); // Centered vertically with the tabs
 			FText(Vars::Menu::CheatTitle.Value.c_str());
 			PopFont();
 			PopStyleColor();
@@ -62,17 +64,17 @@ void CMenu::DrawMenu()
 				{ "SETTINGS", "CONFIG", "BINDS", "MATERIALS" }
 			},
 			{ &iTab, &iAimbotTab, &iVisualsTab, &iMiscTab, &iLogsTab, &iSettingsTab },
-			{ vWindowSize.x - H::Draw.Scale(150), H::Draw.Scale(60) },
+			{ H::Draw.Scale(115), H::Draw.Scale(36) }, // <-- FIXED: Normal button width instead of full screen width
 			{ H::Draw.Scale(16), H::Draw.Scale(16) }, 
 			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarBottom,
 			{ { ICON_MD_GROUP }, { ICON_MD_IMAGE }, { ICON_MD_PUBLIC }, { ICON_MD_MENU_BOOK }, { ICON_MD_SETTINGS } },
-			{ H::Draw.Scale(16), 0 }, {},
+			{ H::Draw.Scale(12), 0 }, {},
 			{}, { H::Draw.Scale(22), 0 }
 		);
 		PopFont();
 
 		// Main Content Area
-		float contentYOffset = H::Draw.Scale(90); 
+		float contentYOffset = H::Draw.Scale(95); // Safely drop below primary and secondary tabs
 		SetCursorPos({ H::Draw.Scale(16), contentYOffset });
 
 		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
@@ -96,6 +98,7 @@ void CMenu::DrawMenu()
 	}
 	PopStyleVar();
 
+	// Floating "Editing bind" window
 	Bind_t tBind;
 	if (!F::Binds.GetBind(CurrentBind, &tBind))
 		CurrentBind = DEFAULT_BIND;
