@@ -37,10 +37,8 @@ void CMenu::DrawMenu()
 		ImVec2 vDrawPos = GetDrawPos();
 		auto pDrawList = GetWindowDrawList();
 
-		// Background
 		pDrawList->AddRectFilled(vDrawPos, { vDrawPos.x + vWindowSize.x, vDrawPos.y + vWindowSize.y }, F::Render.Background0, H::Draw.Scale(6));
 
-		// Title (Top Right)
 		if (!Vars::Menu::CheatTitle.Value.empty())
 		{
 			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
@@ -55,7 +53,6 @@ void CMenu::DrawMenu()
 		static int iTab = 0, iAimbotTab = 0, iVisualsTab = 0, iMiscTab = 0, iLogsTab = 0, iSettingsTab = 0;
 		PushFont(F::Render.FontBold);
 		
-		// --- ROW 1: PRIMARY TABS ---
 		std::vector<const char*> vPrimaryTabs = { "AIMBOT", "VISUALS", "MISC", "LOGS", "SETTINGS" };
 		std::vector<const char*> vPrimaryIcons = { ICON_MD_GROUP, ICON_MD_IMAGE, ICON_MD_PUBLIC, ICON_MD_MENU_BOOK, ICON_MD_SETTINGS };
 		
@@ -69,7 +66,6 @@ void CMenu::DrawMenu()
 			{ H::Draw.Scale(12), 0 }
 		);
 
-		// --- ROW 2: SECONDARY TABS ---
 		std::vector<const char*> vSecondaryTabs;
 		int* pSecondaryIndex = nullptr;
 
@@ -88,15 +84,13 @@ void CMenu::DrawMenu()
 				vSecondaryTabs,
 				pSecondaryIndex,
 				{ H::Draw.Scale(100), H::Draw.Scale(32) }, 
-				{ H::Draw.Scale(16), H::Draw.Scale(54) },  // <--- Forces this row physically BELOW the first row
+				{ H::Draw.Scale(16), H::Draw.Scale(64) }, 
 				FTabsEnum::Horizontal | FTabsEnum::AlignLeft | FTabsEnum::BarBottom
 			);
 		}
-		
 		PopFont();
-
-		// Main Content Area
-		float contentYOffset = H::Draw.Scale(96); // Drops the content down to make room for both rows
+		
+		float contentYOffset = H::Draw.Scale(110); 
 		SetCursorPos({ H::Draw.Scale(16), contentYOffset });
 
 		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
@@ -120,7 +114,6 @@ void CMenu::DrawMenu()
 	}
 	PopStyleVar();
 
-	// Floating "Editing bind" window
 	Bind_t tBind;
 	if (!F::Binds.GetBind(CurrentBind, &tBind))
 		CurrentBind = DEFAULT_BIND;
