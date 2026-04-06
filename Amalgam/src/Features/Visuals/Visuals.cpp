@@ -8,6 +8,7 @@
 #include "../Simulation/ProjectileSimulation/ProjectileSimulation.h"
 #include "CameraWindow/CameraWindow.h"
 #include "../Players/PlayerUtils.h"
+#include "Radar/Radar.h"
 #include "../Spectate/Spectate.h"
 #include "Groups/Groups.h"
 
@@ -290,6 +291,9 @@ void CVisuals::DrawAntiAim(CTFPlayer* pLocal)
 #define PAIR(x) { x, #x }
 void CVisuals::DrawDebugInfo(CTFPlayer* pLocal)
 {
+	F::Radar.Run();
+
+
 #ifdef DEBUG_TEXT
 	if (!Vars::Debug::Info.Value && m_vDebugText.empty())
 		return;
