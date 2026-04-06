@@ -8,7 +8,7 @@ class CRadar
 	void DrawPoints(CTFPlayer* pLocal);
 
 public:
-	void Run(CTFPlayer* pLocal);
+	void Run();
 };
 
 ADD_FEATURE(CRadar, Radar);
