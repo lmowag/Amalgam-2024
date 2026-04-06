@@ -1,7 +1,5 @@
 #include "Radar.h"
 
-#include "Radar.h"
-
 // 1. Core Includes - Order matters here!
 #include "../../../SDK/SDK.h"
 #include "../../../SDK/Vars.h"
@@ -19,43 +17,52 @@
 
 bool CRadar::GetDrawPosition(CTFPlayer* pLocal, CBaseEntity* pEntity, int& x, int& y, int& z)
 {
-	const float flRange = Vars::Radar::Main::Range.Value;
+	// Prevent division by zero if range is somehow 0
+	const float flRange = std::max(Vars::Radar::Main::Range.Value, 1.f);
 	const float flYaw = -DEG2RAD(I::EngineClient->GetViewAngles().y);
 	const float flSin = sinf(flYaw), flCos = cosf(flYaw);
 
 	Vec3 vDelta = pLocal->GetAbsOrigin() - pEntity->GetAbsOrigin();
 	Vec2 vPos = { vDelta.x * flSin + vDelta.y * flCos, vDelta.x * flCos - vDelta.y * flSin };
 
-	switch (Vars::Radar::Main::Style.Value)
+	if (Vars::Radar::Main::Style.Value == 1) // Rectangle
 	{
-	case Vars::Radar::Main::StyleEnum::Circle:
-	{
-		const float flDist = vDelta.Length2D();
-		if (flDist > flRange)
-		{
-			if (!Vars::Radar::Main::DrawOutOfRange.Value)
-				return false;
-
-			vPos *= flRange / flDist;
-		}
-		break;
-	}
-	case Vars::Radar::Main::StyleEnum::Rectangle:
 		if (fabs(vPos.x) > flRange || fabs(vPos.y) > flRange)
 		{
 			if (!Vars::Radar::Main::DrawOutOfRange.Value)
 				return false;
 
-			Vec2 a = { -flRange / vPos.x, -flRange / vPos.y };
-			Vec2 b = { flRange / vPos.x, flRange / vPos.y };
-			Vec2 c = { std::min(a.x, b.x), std::min(a.y, b.y) };
-			vPos *= fabsf(std::max(c.x, c.y));
+			// FIXED: Safe AABB clamping without divide-by-zero crashes (NaN poisoning)
+			float flMaxCoord = std::max(fabs(vPos.x), fabs(vPos.y));
+			if (flMaxCoord > 0.f)
+			{
+				float flScale = flRange / flMaxCoord;
+				vPos.x *= flScale;
+				vPos.y *= flScale;
+			}
+		}
+	}
+	else // Circle
+	{
+		const float flDist = vPos.Length(); // Safely get 2D distance
+		if (flDist > flRange)
+		{
+			if (!Vars::Radar::Main::DrawOutOfRange.Value)
+				return false;
+
+			if (flDist > 0.f)
+			{
+				vPos.x *= flRange / flDist;
+				vPos.y *= flRange / flDist;
+			}
 		}
 	}
 
-	auto& tWindowBox = Vars::Radar::Main::Window.Value;
-	x = tWindowBox.x + vPos.x / flRange * tWindowBox.w / 2;
-	y = tWindowBox.y + vPos.y / flRange * tWindowBox.w / 2 + tWindowBox.h / 2.f;
+	auto tWindowBox = Vars::Radar::Main::Window.Value;
+	
+	// Convert to screen coordinates based on ImGui window position
+	x = tWindowBox.x + (vPos.x / flRange) * (tWindowBox.w / 2.f);
+	y = tWindowBox.y + (vPos.y / flRange) * (tWindowBox.h / 2.f);
 	z = vDelta.z;
 
 	return true;
@@ -63,46 +70,40 @@ bool CRadar::GetDrawPosition(CTFPlayer* pLocal, CBaseEntity* pEntity, int& x, in
 
 void CRadar::DrawBackground()
 {
-	auto& tWindowBox = Vars::Radar::Main::Window.Value;
-	Color_t& tThemeBack = Vars::Menu::Theme::Background.Value;
-	Color_t& tThemeAccent = Vars::Menu::Theme::Accent.Value;
-	Color_t tColorBackground = { tThemeBack.r, tThemeBack.g, tThemeBack.b, byte(Vars::Radar::Main::BackgroundAlpha.Value) };
-	Color_t tColorAccent = { tThemeAccent.r, tThemeAccent.g, tThemeAccent.b, byte(Vars::Radar::Main::LineAlpha.Value) };
+	auto tWindowBox = Vars::Radar::Main::Window.Value;
+	
+	// Prevent drawing if window hasn't been initialized yet
+	if (tWindowBox.w <= 0 || tWindowBox.h <= 0)
+		return;
 
-	// Calculate center coordinates for the center dot
+	Color_t tThemeBack = Vars::Menu::Theme::Background.Value;
+	Color_t tThemeAccent = Vars::Menu::Theme::Accent.Value;
+	Color_t tColorBackground = { tThemeBack.r, tThemeBack.g, tThemeBack.b, static_cast<byte>(Vars::Radar::Main::BackgroundAlpha.Value) };
+	Color_t tColorAccent = { tThemeAccent.r, tThemeAccent.g, tThemeAccent.b, static_cast<byte>(Vars::Radar::Main::LineAlpha.Value) };
+
 	const int centerX = tWindowBox.x;
 	const int centerY = tWindowBox.y + tWindowBox.h / 2;
 
-	switch (Vars::Radar::Main::Style.Value)
-	{
-	case Vars::Radar::Main::StyleEnum::Circle:
-	{
-		const float flRadius = tWindowBox.w / 2.f;
-		H::Draw.FillCircle(tWindowBox.x, centerY, flRadius, 100, tColorBackground);
-		H::Draw.LineCircle(tWindowBox.x, centerY, flRadius + 1.0f, 100, { 0, 0, 0, 255 }); // Black Outline
-		H::Draw.LineCircle(tWindowBox.x, centerY, flRadius, 100, tColorAccent);            // Colored Border
-		break;
-	}
-	case Vars::Radar::Main::StyleEnum::Rectangle:
+	if (Vars::Radar::Main::Style.Value == 1) // Rectangle
 	{
 		int left = tWindowBox.x - tWindowBox.w / 2;
 		int top = tWindowBox.y;
 		int width = tWindowBox.w;
 		int height = tWindowBox.h;
 
-		// 1. Draw solid dark background
 		H::Draw.FillRect(left, top, width, height, tColorBackground);
-
-		// 2. Draw accent outer outline (2px outside) - FIXED to use modern Amalgam colors!
 		H::Draw.LineRect(left - 2, top - 2, width + 4, height + 4, tThemeAccent);
-
-		// 3. Draw crisp colored accent border
 		H::Draw.LineRect(left, top, width, height, tColorAccent);
-		break;
 	}
+	else // Circle
+	{
+		const float flRadius = tWindowBox.w / 2.f;
+		H::Draw.FillCircle(tWindowBox.x, centerY, flRadius, 100, tColorBackground);
+		H::Draw.LineCircle(tWindowBox.x, centerY, flRadius + 1.0f, 100, { 0, 0, 0, 255 }); 
+		H::Draw.LineCircle(tWindowBox.x, centerY, flRadius, 100, tColorAccent);            
 	}
 
-	// Draw the minimalist center dot from your image (pale pink with black outline)
+	// Center dot
 	H::Draw.FillCircle(centerX, centerY, 2.0f, 12, { 255, 175, 175, 255 });
 	H::Draw.LineCircle(centerX, centerY, 2.0f, 12, { 0, 0, 0, 255 });
 }
@@ -125,7 +126,6 @@ void CRadar::DrawPoints(CTFPlayer* pLocal)
 						const float flRadius = sqrtf(pow(iSize, 2) * 2) / 2;
 						H::Draw.FillCircle(x, y, flRadius, 20, { 150, 50, 200, 255 });
 					}
-					// World item textures are custom, removing .vtf allows the engine to try and find them safely
 					H::Draw.Texture("hud/pickup_gargoyle", x, y, iSize, iSize);
 				}
 			}
@@ -211,7 +211,7 @@ void CRadar::DrawPoints(CTFPlayer* pLocal)
 						const float flRadius = sqrtf(pow(iSize, 2) * 2) / 2;
 						H::Draw.FillCircle(x, y, flRadius, 20, { 150, 150, 150, 255 });
 					}
-					H::Draw.Texture("vgui/hud/ammo_box", x, y, iSize, iSize); // Fixed path
+					H::Draw.Texture("vgui/hud/ammo_box", x, y, iSize, iSize);
 				}
 			}
 		}
@@ -228,7 +228,7 @@ void CRadar::DrawPoints(CTFPlayer* pLocal)
 						const float flRadius = sqrtf(pow(iSize, 2) * 2) / 2;
 						H::Draw.FillCircle(x, y, flRadius, 20, { 0, 255, 0, 255 });
 					}
-					H::Draw.Texture("vgui/hud/health_color", x, y, iSize, iSize); // Fixed path
+					H::Draw.Texture("vgui/hud/health_color", x, y, iSize, iSize);
 				}
 			}
 		}
@@ -277,7 +277,6 @@ void CRadar::DrawPoints(CTFPlayer* pLocal)
 					iBounds = flRadius * 2;
 				}
 
-				// FIXED BUILDING TEXTURES
 				switch (pBuilding->GetClassID())
 				{
 				case ETFClassID::CObjectSentrygun:
@@ -343,7 +342,6 @@ void CRadar::DrawPoints(CTFPlayer* pLocal)
 					iBounds = flRadius * 2;
 				}
 
-				// FIXED PLAYER TEXTURES
 				switch (Vars::Radar::Player::Icon.Value)
 				{
 				case Vars::Radar::Player::IconEnum::Avatars:
@@ -414,7 +412,7 @@ void CRadar::DrawPoints(CTFPlayer* pLocal)
 
 void CRadar::Run(CTFPlayer* pLocal)
 {
-	if (!Vars::Radar::Main::Enabled.Value || I::MatSystemSurface->IsCursorVisible() && !I::EngineClient->IsPlayingDemo() && !F::Menu.m_bIsOpen)
+	if (!Vars::Radar::Main::Enabled.Value || (I::MatSystemSurface->IsCursorVisible() && !I::EngineClient->IsPlayingDemo() && !F::Menu.m_bIsOpen))
 		return;
 
 	DrawBackground();
