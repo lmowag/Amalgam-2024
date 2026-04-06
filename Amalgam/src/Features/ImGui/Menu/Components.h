@@ -689,20 +689,13 @@ namespace ImGui
 		PushStyleVar(ImGuiStyleVar_CellPadding, { 0, 0 });
 
 		bool bReturn = BeginChild(sLabel, { GetColumnWidth(), flMinHeight }, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_AlwaysUseWindowPadding);
+
 		if (bReturn)
 		{
+			// Clean, flat dark background ONLY. No lines.
 			ImVec2 vSize = GetWindowSize();
 			ImVec2 vDrawPos = GetDrawPos();
-			ImDrawList* pDrawList = GetWindowDrawList();
-
-			// 1. Flat dark background with NO outer borders
-			pDrawList->AddRectFilled(vDrawPos, ImVec2(vDrawPos.x + vSize.x, vDrawPos.y + vSize.y), F::Render.Background0p5);
-
-			// 2. Thin separator line immediately underneath the section title
-			if (sLabel[0] != '#')
-			{
-				pDrawList->AddLine(ImVec2(vDrawPos.x, vDrawPos.y + H::Draw.Scale(25)), ImVec2(vDrawPos.x + vSize.x, vDrawPos.y + H::Draw.Scale(25)), F::Render.Background2);
-			}
+			GetWindowDrawList()->AddRectFilled(vDrawPos, { vDrawPos.x + vSize.x, vDrawPos.y + vSize.y }, F::Render.Background0p5, H::Draw.Scale(4));
 		}
 
 		PushStyleVar(ImGuiStyleVar_ItemSpacing, { H::Draw.Scale(8), 0 });
@@ -711,18 +704,19 @@ namespace ImGui
 			ImVec2 vOriginalPos = GetCursorPos();
 
 			PushFont(F::Render.FontBold);
-			// Align text slightly off the wall, draw it in your Accent Color (Orange)
-			SetCursorPos(ImVec2(H::Draw.Scale(8), H::Draw.Scale(6)));
+			SetCursorPos({ H::Draw.Scale(8), H::Draw.Scale(8) });
 			TextColored(F::Render.Accent, StripDoubleHash(sLabel).c_str());
 			PopFont();
 
-			SetCursorPos(vOriginalPos); DebugDummy({ 0, H::Draw.Scale(19 + flPaddingMod) });
+			SetCursorPos(vOriginalPos); DebugDummy({ 0, H::Draw.Scale(24 + flPaddingMod) });
 		}
 		else if (flPaddingMod)
 			SetCursorPosY(GetCursorPosY() + H::Draw.Scale(flPaddingMod));
 
 		return bReturn;
 	}
+
+
 	inline void EndSection()
 	{
 		uint32_t uHash = vStoredLabels.back();
