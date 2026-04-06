@@ -37,44 +37,66 @@ void CMenu::DrawMenu()
 		ImVec2 vDrawPos = GetDrawPos();
 		auto pDrawList = GetWindowDrawList();
 
-		// Draw solid background for the whole menu
+		// Background
 		pDrawList->AddRectFilled(vDrawPos, { vDrawPos.x + vWindowSize.x, vDrawPos.y + vWindowSize.y }, F::Render.Background0, H::Draw.Scale(6));
 
-		// Draw Title (Top Right)
+		// Title (Top Right)
 		if (!Vars::Menu::CheatTitle.Value.empty())
 		{
 			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
 			PushFont(F::Render.FontBold);
 			ImVec2 titleSize = FCalcTextSize(Vars::Menu::CheatTitle.Value.c_str());
-			SetCursorPos({ vWindowSize.x - titleSize.x - H::Draw.Scale(20), H::Draw.Scale(25) }); // Centered vertically with the tabs
+			SetCursorPos({ vWindowSize.x - titleSize.x - H::Draw.Scale(20), H::Draw.Scale(25) });
 			FText(Vars::Menu::CheatTitle.Value.c_str());
 			PopFont();
 			PopStyleColor();
 		}
 
-		// Horizontal Tabs
 		static int iTab = 0, iAimbotTab = 0, iVisualsTab = 0, iMiscTab = 0, iLogsTab = 0, iSettingsTab = 0;
 		PushFont(F::Render.FontBold);
+		
+		// --- ROW 1: PRIMARY TABS ---
+		std::vector<const char*> vPrimaryTabs = { "AIMBOT", "VISUALS", "MISC", "LOGS", "SETTINGS" };
+		std::vector<const char*> vPrimaryIcons = { ICON_MD_GROUP, ICON_MD_IMAGE, ICON_MD_PUBLIC, ICON_MD_MENU_BOOK, ICON_MD_SETTINGS };
+		
 		FTabs(
-			{
-				{ "AIMBOT", "GENERAL", "HVH" },
-				{ "VISUALS", "ESP", "MISC##", "RADAR", "MENU" },
-				{ "MISC", "MAIN", "HVH" },
-				{ "LOGS", "PLAYERLIST", "SETTINGS##", "OUTPUT" },
-				{ "SETTINGS", "CONFIG", "BINDS", "MATERIALS" }
-			},
-			{ &iTab, &iAimbotTab, &iVisualsTab, &iMiscTab, &iLogsTab, &iSettingsTab },
-			{ H::Draw.Scale(115), H::Draw.Scale(36) }, // <-- FIXED: Normal button width instead of full screen width
+			vPrimaryTabs,
+			&iTab,
+			{ H::Draw.Scale(110), H::Draw.Scale(36) },
 			{ H::Draw.Scale(16), H::Draw.Scale(16) }, 
-			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft | FTabsEnum::BarBottom,
-			{ { ICON_MD_GROUP }, { ICON_MD_IMAGE }, { ICON_MD_PUBLIC }, { ICON_MD_MENU_BOOK }, { ICON_MD_SETTINGS } },
-			{ H::Draw.Scale(12), 0 }, {},
-			{}, { H::Draw.Scale(22), 0 }
+			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft,
+			vPrimaryIcons,
+			{ H::Draw.Scale(12), 0 }
 		);
+
+		// --- ROW 2: SECONDARY TABS ---
+		std::vector<const char*> vSecondaryTabs;
+		int* pSecondaryIndex = nullptr;
+
+		switch (iTab)
+		{
+			case 0: vSecondaryTabs = { "GENERAL", "HVH" }; pSecondaryIndex = &iAimbotTab; break;
+			case 1: vSecondaryTabs = { "ESP", "MISC", "RADAR", "MENU" }; pSecondaryIndex = &iVisualsTab; break;
+			case 2: vSecondaryTabs = { "MAIN", "HVH" }; pSecondaryIndex = &iMiscTab; break;
+			case 3: vSecondaryTabs = { "PLAYERLIST", "SETTINGS", "OUTPUT" }; pSecondaryIndex = &iLogsTab; break;
+			case 4: vSecondaryTabs = { "CONFIG", "BINDS", "MATERIALS", "EXTRA" }; pSecondaryIndex = &iSettingsTab; break;
+		}
+
+		if (!vSecondaryTabs.empty())
+		{
+			FTabs(
+				vSecondaryTabs,
+				pSecondaryIndex,
+				{ H::Draw.Scale(100), H::Draw.Scale(32) }, 
+				{ H::Draw.Scale(16), H::Draw.Scale(54) },  // <--- Forces this row physically BELOW the first row
+				FTabsEnum::Horizontal | FTabsEnum::AlignLeft | FTabsEnum::BarBottom
+			);
+		}
+		
 		PopFont();
 
 		// Main Content Area
-		float contentYOffset = H::Draw.Scale(95); // Safely drop below primary and secondary tabs
+		float contentYOffset = H::Draw.Scale(96); // Drops the content down to make room for both rows
 		SetCursorPos({ H::Draw.Scale(16), contentYOffset });
 
 		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
