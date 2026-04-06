@@ -52,30 +52,32 @@ void CMenu::DrawMenu()
 
 		static int iTab = 0, iAimbotTab = 0, iVisualsTab = 0, iMiscTab = 0, iLogsTab = 0, iSettingsTab = 0;
 		PushFont(F::Render.FontBold);
-		
+
+		// ROW 1: PRIMARY TABS
 		std::vector<const char*> vPrimaryTabs = { "AIMBOT", "VISUALS", "MISC", "LOGS", "SETTINGS" };
 		std::vector<const char*> vPrimaryIcons = { ICON_MD_GROUP, ICON_MD_IMAGE, ICON_MD_PUBLIC, ICON_MD_MENU_BOOK, ICON_MD_SETTINGS };
-		
+
 		FTabs(
 			vPrimaryTabs,
 			&iTab,
 			{ H::Draw.Scale(110), H::Draw.Scale(36) },
-			{ H::Draw.Scale(16), H::Draw.Scale(16) }, 
+			{ H::Draw.Scale(16), H::Draw.Scale(16) },
 			FTabsEnum::Horizontal | FTabsEnum::HorizontalIcons | FTabsEnum::AlignLeft,
 			vPrimaryIcons,
 			{ H::Draw.Scale(12), 0 }
 		);
 
+		// ROW 2: SECONDARY TABS
 		std::vector<const char*> vSecondaryTabs;
 		int* pSecondaryIndex = nullptr;
 
 		switch (iTab)
 		{
-			case 0: vSecondaryTabs = { "GENERAL", "HVH" }; pSecondaryIndex = &iAimbotTab; break;
-			case 1: vSecondaryTabs = { "ESP", "MISC", "RADAR", "MENU" }; pSecondaryIndex = &iVisualsTab; break;
-			case 2: vSecondaryTabs = { "MAIN", "HVH" }; pSecondaryIndex = &iMiscTab; break;
-			case 3: vSecondaryTabs = { "PLAYERLIST", "SETTINGS", "OUTPUT" }; pSecondaryIndex = &iLogsTab; break;
-			case 4: vSecondaryTabs = { "CONFIG", "BINDS", "MATERIALS", "EXTRA" }; pSecondaryIndex = &iSettingsTab; break;
+		case 0: vSecondaryTabs = { "GENERAL", "HVH" }; pSecondaryIndex = &iAimbotTab; break;
+		case 1: vSecondaryTabs = { "ESP", "CHAMS", "GLOW", "MISC", "RADAR", "MENU" }; pSecondaryIndex = &iVisualsTab; break;
+		case 2: vSecondaryTabs = { "MAIN", "HVH" }; pSecondaryIndex = &iMiscTab; break;
+		case 3: vSecondaryTabs = { "PLAYERLIST", "SETTINGS", "OUTPUT" }; pSecondaryIndex = &iLogsTab; break;
+		case 4: vSecondaryTabs = { "CONFIG", "BINDS", "PLAYERLIST", "MATERIALS" }; pSecondaryIndex = &iSettingsTab; break;
 		}
 
 		if (!vSecondaryTabs.empty())
@@ -83,14 +85,15 @@ void CMenu::DrawMenu()
 			FTabs(
 				vSecondaryTabs,
 				pSecondaryIndex,
-				{ H::Draw.Scale(100), H::Draw.Scale(32) }, 
-				{ H::Draw.Scale(16), H::Draw.Scale(64) }, 
+				{ H::Draw.Scale(100), H::Draw.Scale(32) },
+				{ H::Draw.Scale(16), H::Draw.Scale(60) }, // Positioned directly below row 1
 				FTabsEnum::Horizontal | FTabsEnum::AlignLeft | FTabsEnum::BarBottom
 			);
 		}
 		PopFont();
-		
-		float contentYOffset = H::Draw.Scale(110); 
+
+		// Content Area Dropdown (forces content to clear both rows of tabs)
+		float contentYOffset = H::Draw.Scale(105);
 		SetCursorPos({ H::Draw.Scale(16), contentYOffset });
 
 		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
@@ -2398,30 +2401,32 @@ void CMenu::MenuSettings(int iTab)
 
 	switch (iTab)
 	{
-		// Settings
 	case 0:
 	{
 		if (BeginTable("ConfigSettingsTable", 2))
 		{
-			/* Column 1 */
 			TableNextColumn();
 			if (Section("Config"))
 			{
-				// Folder Buttons
+				float colWidth = GetContentRegionAvail().x;
+
 				if (FButton("CONFIGS FOLDER", FButtonEnum::Left))
 					ShellExecuteA(NULL, NULL, F::Configs.m_sConfigPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
 				if (FButton("VISUALS FOLDER", FButtonEnum::Right | FButtonEnum::SameLine))
 					ShellExecuteA(NULL, NULL, F::Configs.m_sVisualsPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
 
-				DebugDummy({ 0, H::Draw.Scale(4) });
+				DebugDummy({ 0, H::Draw.Scale(8) });
 
-				// Tabs for General / Visuals
+				// THIS WAS THE ISSUE: We must get the current Y pos to draw tabs BELOW the buttons!
+				float tabYOffset = GetCursorPosY();
+
 				static int iConfigTab = 0;
 				PushFont(F::Render.FontBold);
-				FTabs({ "GENERAL", "VISUALS" }, &iConfigTab, { GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f, H::Draw.Scale(28) }, { 0, 0 }, FTabsEnum::Horizontal | FTabsEnum::AlignReverse | FTabsEnum::Fit);
+				FTabs({ "GENERAL", "VISUALS" }, &iConfigTab, { colWidth / 2, H::Draw.Scale(28) }, { 0, tabYOffset }, FTabsEnum::Horizontal);
 				PopFont();
 
-				DebugDummy({ 0, H::Draw.Scale(4) });
+				// Safely push the cursor below the tabs we just drew so the text input doesn't overlap
+				SetCursorPosY(tabYOffset + H::Draw.Scale(36));
 
 				bool bVisual = (iConfigTab == 1);
 				auto& sPath = !bVisual ? F::Configs.m_sConfigPath : F::Configs.m_sVisualsPath;
@@ -2431,27 +2436,25 @@ void CMenu::MenuSettings(int iTab)
 
 				static std::string sStaticName;
 
-				// Create Config Input
-				FSDropdown("Config name", &sStaticName, {}, FSDropdownEnum::AutoUpdate, -H::Draw.Unscale(FCalcTextSize("CREATE").x) - 40);
+				FSDropdown("Config name", &sStaticName, {}, FSDropdownEnum::AutoUpdate, -H::Draw.Scale(85));
+
 				PushDisabled(sStaticName.empty());
 				{
-					if (FButton("CREATE", FButtonEnum::Fit | FButtonEnum::SameLine, { 0, 40 }))
+					SameLine(colWidth - H::Draw.Scale(75));
+					if (FButton("CREATE", FButtonEnum::Fit, { H::Draw.Scale(75), H::Draw.Scale(36) }))
 					{
 						if (!std::filesystem::exists(sPath + sStaticName))
 						{
-							if (!bVisual)
-								F::Configs.SaveConfig(sStaticName);
-							else
-								F::Configs.SaveVisual(sStaticName);
+							if (!bVisual) F::Configs.SaveConfig(sStaticName);
+							else F::Configs.SaveVisual(sStaticName);
 						}
 						sStaticName.clear();
 					}
 				}
 				PopDisabled();
 
-				DebugDummy({ 0, H::Draw.Scale(8) });
+				DebugDummy({ 0, H::Draw.Scale(12) });
 
-				// Config List
 				std::vector<std::pair<std::filesystem::directory_entry, std::string>> vConfigs = {};
 				bool bDefaultFound = false;
 				for (auto& tEntry : std::filesystem::directory_iterator(sPath))
@@ -2487,22 +2490,22 @@ void CMenu::MenuSettings(int iTab)
 					bool bCurrentConfig = FNV1A::Hash32(sConfigName.c_str()) == FNV1A::Hash32(sConfig.c_str());
 					ImVec2 vOriginalPos = GetCursorPos();
 
-					// Centered Text
-					SetCursorPos({ H::Draw.Scale(12), vOriginalPos.y + H::Draw.Scale(7) });
-					TextColored(bCurrentConfig ? F::Render.Active.Value : F::Render.Inactive.Value, TruncateText(sConfigName, GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 2 - H::Draw.Scale(100)).c_str());
+					SetCursorPos({ H::Draw.Scale(8), vOriginalPos.y + H::Draw.Scale(7) });
+					TextColored(bCurrentConfig ? F::Render.Active.Value : F::Render.Inactive.Value, TruncateText(sConfigName, colWidth - H::Draw.Scale(100)).c_str());
 
-					int iOffset = 9;
-					// Delete
-					SetCursorPos({ GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(2) });
+					int iconSpacing = 28;
+					int currentOffset = iconSpacing;
+
+					SetCursorPos({ colWidth - H::Draw.Scale(currentOffset), vOriginalPos.y + H::Draw.Scale(2) });
 					bool bDelete = IconButton(ICON_MD_DELETE);
 
-					// Save
-					SetCursorPos({ GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(2) });
+					currentOffset += iconSpacing;
+					SetCursorPos({ colWidth - H::Draw.Scale(currentOffset), vOriginalPos.y + H::Draw.Scale(2) });
 					bool bSave = IconButton(ICON_MD_SAVE);
 					FTooltip(ICON_MD_ADD ICON_MD_FILE_DOWNLOAD_OFF, bNoSave && IsItemHovered(), 300.f, F::Render.IconFont);
 
-					// Load
-					SetCursorPos({ GetWindowWidth() / 2 - GetStyle().WindowPadding.x * 1.5f - H::Draw.Scale(iOffset += 25), vOriginalPos.y + H::Draw.Scale(2) });
+					currentOffset += iconSpacing;
+					SetCursorPos({ colWidth - H::Draw.Scale(currentOffset), vOriginalPos.y + H::Draw.Scale(2) });
 					bool bLoad = IconButton(bCurrentConfig ? ICON_MD_REFRESH : ICON_MD_DOWNLOAD);
 					FTooltip(ICON_MD_ADD ICON_MD_FILE_UPLOAD_OFF, bNoSave && IsItemHovered(), 300.f, F::Render.IconFont);
 
@@ -2575,7 +2578,6 @@ void CMenu::MenuSettings(int iTab)
 			FText("Built @ " __DATE__ ", " __TIME__ ", " __CONFIGURATION__);
 			PopStyleColor();
 
-			/* Column 2 */
 			TableNextColumn();
 			if (Section("Debug", 8))
 			{
