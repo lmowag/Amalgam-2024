@@ -74,7 +74,7 @@ void CMenu::DrawMenu()
 		switch (iTab)
 		{
 		case 0: vSecondaryTabs = { "GENERAL", "HVH" }; pSecondaryIndex = &iAimbotTab; break;
-		case 1: vSecondaryTabs = { "ESP", "CHAMS", "GLOW", "MISC", "RADAR", "MENU" }; pSecondaryIndex = &iVisualsTab; break;
+		case 1: vSecondaryTabs = { "ESP", "MISC", "RADAR", "MENU" }; pSecondaryIndex = &iVisualsTab; break;
 		case 2: vSecondaryTabs = { "MAIN", "HVH" }; pSecondaryIndex = &iMiscTab; break;
 		case 3: vSecondaryTabs = { "PLAYERLIST", "SETTINGS", "OUTPUT" }; pSecondaryIndex = &iLogsTab; break;
 		case 4: vSecondaryTabs = { "CONFIG", "BINDS", "PLAYERLIST", "MATERIALS" }; pSecondaryIndex = &iSettingsTab; break;
